@@ -1,0 +1,15 @@
+services:
+  polysim:
+    build: .
+    image: polysim:local
+    container_name: polysim
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_PATH: /data/polysim.sqlite3
+    volumes:
+      - polysim-data:/data
+
+volumes:
+  polysim-data:

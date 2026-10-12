@@ -1,0 +1,70 @@
+Metadata-Version: 2.4
+Name: polysim
+Version: 0.1.0
+Summary: A Discord bot for simulated Polymarket betting with play credits
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: discord.py<3,>=2.4
+Requires-Dist: httpx<1,>=0.27
+Provides-Extra: dev
+Requires-Dist: pytest<9,>=8; extra == "dev"
+
+# PolySim
+
+PolySim is a Discord bot for public, simulated betting on active Polymarket YES/NO markets. It uses play credits only. The bot reads market data and prices; it does not connect a wallet or place Polymarket orders.
+
+## Features
+
+- Search active markets with `/markets query`, then place a simulated position with `/bet market_id outcome stake`.
+- Each member receives 1,000 credits per server. `/balance`, `/positions`, and `/leaderboard` are public.
+- Positions buy shares at the current Polymarket best BUY price and settle automatically after Polymarket publishes a clear final outcome. Winning shares pay 1 credit each; a 50/50 resolution pays 0.50 per share.
+- Open positions are valued at the current best SELL price for account and leaderboard totals. A position without a current sell quote is marked unpriced and excluded from its displayed total.
+- `/admin reset` restores all existing server accounts to 1,000 credits. `/admin reset member:@name` restores one account. Both void that account's open positions while retaining the position history.
+
+The bot uses Polymarket's public [market discovery](https://docs.polymarket.com/market-data/discover-markets), [price and order-book](https://docs.polymarket.com/market-data/prices-order-books), and [resolution](https://docs.polymarket.com/concepts/resolution) data. It currently accepts standard binary YES/NO markets.
+
+## Requirements
+
+- Python 3.11 or newer
+- A Discord application with a bot token and the `applications.commands` and `bot` scopes
+- A host that stays online and keeps the SQLite database file between restarts
+
+## Setup and run
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev]'
+cp .env.example .env
+```
+
+Set `DISCORD_TOKEN` in your shell or deployment environment. `DISCORD_DEV_GUILD_ID` is optional and makes slash commands sync to a test server immediately. Keep `.env` and the database out of source control. Start the bot with:
+
+```bash
+python -m polysim
+```
+
+By default, the database is stored at `data/polysim.sqlite3`. Set `DATABASE_PATH` to a persistent volume path for hosted deployments. `RESOLUTION_POLL_SECONDS` defaults to 60 and cannot be less than 10.
+
+## Commands
+
+| Command | Purpose |
+| --- | --- |
+| `/markets query` | Search up to 10 active binary markets and show YES/NO buy prices and links. |
+| `/bet market_id outcome stake` | Spend available credits on YES or NO shares. Use an ID shown by `/markets`. |
+| `/balance [member]` | Show available credits and open-position value. |
+| `/positions [member]` | Show open, settled, and admin-voided positions. |
+| `/leaderboard` | Rank server members by available credits plus current open-position value. |
+| `/admin reset [member]` | Reset one member or all existing accounts; requires Manage Server permission. |
+
+All bot responses and settlement notices are public. Automatic settlement notices are sent to the channel where each bet was placed. A market remains unsettled while the API does not report an unambiguous final outcome.
+
+## Development
+
+Run the automated tests with:
+
+```bash
+pytest
+```
+
+The tests use local SQLite databases and mocked API responses; they do not need a Discord token or place external orders.
